@@ -1,0 +1,59 @@
+let
+    // =========================================================================
+    // ÉTAPE 1: Préparer les données de Customers (SQL Server)
+    // =========================================================================
+    Customers_SSMS_Prepared = Table.SelectColumns(#"Customers", {"CustomerID", "CompanyName", "City"}),
+    #"SSMS_WithSource" = Table.AddColumn(Customers_SSMS_Prepared, "Source", each "SSMS"),
+
+    // =========================================================================
+    // ÉTAPE 2: Préparer les données de Customers_Excel
+    // =========================================================================
+    Customers_Excel_Prepared = Table.SelectColumns(#"Customers_Excel", {"ID", "Company", "City"}),
+    #"Excel_WithSource" = Table.AddColumn(Customers_Excel_Prepared, "Source", each "EXCEL"),
+
+    // =========================================================================
+    // ÉTAPE 3: Standardiser les noms de colonnes pour l'union
+    // =========================================================================
+    SSMS_Standardized = Table.RenameColumns(#"SSMS_WithSource", {
+        {"CustomerID", "id_client_prod"},
+        {"CompanyName", "CompanyName"},
+        {"City", "City"},
+        {"Source", "source_prod"}
+    }),
+
+    Excel_Standardized = Table.RenameColumns(#"Excel_WithSource", {
+        {"ID", "id_client_prod"},
+        {"Company", "CompanyName"}, 
+        {"City", "City"},
+        {"Source", "source_prod"}
+    }),
+
+    // =========================================================================
+    // ÉTAPE 4: Combiner les deux sources
+    // =========================================================================
+    CombinedData = Table.Combine({SSMS_Standardized, Excel_Standardized}),
+
+    // =========================================================================
+    // ÉTAPE 5: Convertir id_client_prod en texte pour uniformité
+    // =========================================================================
+    #"TypeCorrige" = Table.TransformColumnTypes(CombinedData, {
+        {"id_client_prod", type text}
+    }),
+
+    // =========================================================================
+    // ÉTAPE 6: Ajouter l'ID séquentiel unique
+    // =========================================================================
+    #"AddedIndex" = Table.AddIndexColumn(#"TypeCorrige", "id_seqClient", 1, 1, Int64.Type),
+
+    // =========================================================================
+    // ÉTAPE 7: Sélectionner l'ordre final des colonnes
+    // =========================================================================
+    #"FinalColumns" = Table.SelectColumns(#"AddedIndex", {
+        "id_seqClient",
+        "id_client_prod", 
+        "source_prod",
+        "CompanyName",
+        "City"
+    })
+in
+    #"FinalColumns"

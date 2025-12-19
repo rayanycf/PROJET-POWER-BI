@@ -1,0 +1,108 @@
+// TF_COMMANDE - VERSION AVEC FORMAT 03/2006
+let
+    // =========================================================================
+    // ÉTAPE 1: Préparer et COMBINER les données brutes
+    // =========================================================================
+    Orders_SSMS = Table.SelectColumns(#"Orders", {"OrderID", "CustomerID", "EmployeeID", "OrderDate", "ShippedDate"}),
+    #"SSMS_WithFlags" = Table.AddColumn(Orders_SSMS, "nbr_commande_livrees", each if [ShippedDate] <> null then 1 else 0),
+    #"SSMS_WithFlags2" = Table.AddColumn(#"SSMS_WithFlags", "nbr_commande_non_livrees", each if [ShippedDate] = null then 1 else 0),
+    #"SSMS_WithSource" = Table.AddColumn(#"SSMS_WithFlags2", "source_prod", each "SSMS"),
+
+    Orders_Excel_Prepared = Table.SelectColumns(#"Orders_Excel", {"Order ID", "Customer ID", "Employee ID", "Order Date", "Shipped Date"}),
+    #"Excel_WithFlags" = Table.AddColumn(Orders_Excel_Prepared, "nbr_commande_livrees", each if [Shipped Date] <> null then 1 else 0),
+    #"Excel_WithFlags2" = Table.AddColumn(#"Excel_WithFlags", "nbr_commande_non_livrees", each if [Shipped Date] = null then 1 else 0),
+    #"Excel_WithSource" = Table.AddColumn(#"Excel_WithFlags2", "source_prod", each "EXCEL"),
+
+    // Standardiser les noms
+    SSMS_Standardized = Table.RenameColumns(#"SSMS_WithSource", {
+        {"OrderID", "OrderID"}, {"CustomerID", "CustomerID"}, {"EmployeeID", "EmployeeID"},
+        {"OrderDate", "OrderDate"}, {"ShippedDate", "ShippedDate"}
+    }),
+
+    Excel_Standardized = Table.RenameColumns(#"Excel_WithSource", {
+        {"Order ID", "OrderID"}, {"Customer ID", "CustomerID"}, {"Employee ID", "EmployeeID"},
+        {"Order Date", "OrderDate"}, {"Shipped Date", "ShippedDate"}
+    }),
+
+    CombinedData = Table.Combine({SSMS_Standardized, Excel_Standardized}),
+    
+    // =========================================================================
+    // ÉTAPE 2: AGRÉGATION PAR COMMANDE (878 lignes)
+    // =========================================================================
+    #"TypeCorrige" = Table.TransformColumnTypes(CombinedData, {
+        {"CustomerID", type text}, {"EmployeeID", type text}, {"OrderID", type text},
+        {"OrderDate", type date}
+    }),
+
+    #"AgregeParCommande" = Table.Group(#"TypeCorrige", 
+        {"OrderID", "CustomerID", "EmployeeID", "OrderDate", "source_prod"}, {
+            {"nbr_commande_livrees", each List.Sum([nbr_commande_livrees]), type number},
+            {"nbr_commande_non_livrees", each List.Sum([nbr_commande_non_livrees]), type number}
+        }
+    ),
+
+    // =========================================================================
+    // ÉTAPE 3: CRÉER MOIS_ANNEE AVEC FORMAT 03/2006
+    // =========================================================================
+    #"AjouteMoisAnnee" = Table.AddColumn(#"AgregeParCommande", "mois_annee", each 
+        Text.PadStart(Text.From(Date.Month([OrderDate])), 2, "0") & "/" & Text.From(Date.Year([OrderDate])), 
+        type text
+    ),
+
+    // =========================================================================
+    // ÉTAPE 4: JOINTURES AVEC LES DIMENSIONS
+    // =========================================================================
+    // Jointure Dim_Client
+    #"JoinDimClient" = Table.NestedJoin(
+        #"AjouteMoisAnnee", 
+        {"CustomerID", "source_prod"}, 
+        #"DimClient", 
+        {"id_client_prod", "source_prod"}, 
+        "ClientData", 
+        JoinKind.LeftOuter
+    ),
+    #"ExpandedClient" = Table.ExpandTableColumn(#"JoinDimClient", "ClientData", {"id_seqClient"}, {"id_seqClient"}),
+
+    // Jointure Dim_Employee (version unique)
+    Dim_Employee_Unique = Table.Group(#"Dim_Employee", 
+        {"id_employee_prod", "source_prod"}, {
+            {"id_seqEmployee", each List.Min([id_seqEmployee]), Int64.Type}
+        }
+    ),
+    
+    #"JoinDimEmployee" = Table.NestedJoin(
+        #"ExpandedClient", 
+        {"EmployeeID", "source_prod"}, 
+        Dim_Employee_Unique, 
+        {"id_employee_prod", "source_prod"}, 
+        "EmployeeData", 
+        JoinKind.LeftOuter
+    ),
+    #"ExpandedEmployee" = Table.ExpandTableColumn(#"JoinDimEmployee", "EmployeeData", {"id_seqEmployee"}, {"id_seqEmployee"}),
+
+    // Jointure Dim_Temps (par mois_annee avec format 03/2006)
+    #"JoinDimTemps" = Table.NestedJoin(
+        #"ExpandedEmployee", 
+        {"mois_annee"}, 
+        #"Dim_Temps", 
+        {"mois_annee"}, 
+        "TempsData", 
+        JoinKind.Inner
+    ),
+    #"ExpandedTemps" = Table.ExpandTableColumn(#"JoinDimTemps", "TempsData", {"id_temps"}, {"id_temps"}),
+
+    // =========================================================================
+    // ÉTAPE 5: NETTOYAGE FINAL
+    // =========================================================================
+    #"ColonnesNettoyees" = Table.RemoveColumns(#"ExpandedTemps", {
+        "OrderID", "CustomerID", "EmployeeID", "OrderDate", "source_prod", "mois_annee"
+    }),
+
+    #"AddedIndex" = Table.AddIndexColumn(#"ColonnesNettoyees", "id_seq_fait", 1, 1, Int64.Type),
+
+    #"FinalColumns" = Table.SelectColumns(#"AddedIndex", {
+        "id_seq_fait", "id_temps", "id_seqEmployee", "id_seqClient", 
+        "nbr_commande_livrees", "nbr_commande_non_livrees"
+    })
+in
+    #"FinalColumns"

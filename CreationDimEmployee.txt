@@ -1,0 +1,109 @@
+let
+    // =========================================================================
+    // ÉTAPE 1: Préparer Employees (SSMS) avec Territories
+    // =========================================================================
+    // Jointure Employees + EmployeeTerritories + Territories
+    Employees_WithTerritories = Table.NestedJoin(
+        #"Employees", 
+        {"EmployeeID"}, 
+        #"EmployeeTerritories", 
+        {"EmployeeID"}, 
+        "EmpTerritories", 
+        JoinKind.LeftOuter
+    ),
+    
+    #"ExpandedEmpTerritories" = Table.ExpandTableColumn(
+        Employees_WithTerritories, 
+        "EmpTerritories", 
+        {"TerritoryID"}, 
+        {"TerritoryID"}
+    ),
+    
+    Employees_WithTerritoryDesc = Table.NestedJoin(
+        #"ExpandedEmpTerritories", 
+        {"TerritoryID"}, 
+        #"Territories", 
+        {"TerritoryID"}, 
+        "TerritoryData", 
+        JoinKind.LeftOuter
+    ),
+    
+    #"ExpandedTerritoryData" = Table.ExpandTableColumn(
+        Employees_WithTerritoryDesc, 
+        "TerritoryData", 
+        {"TerritoryDescription"}, 
+        {"TerritoryDescription"}
+    ),
+    
+    // Préparer la table SSMS finale
+    SSMS_Prepared = Table.SelectColumns(#"ExpandedTerritoryData", {
+        "EmployeeID", "LastName", "FirstName", "Region", "TerritoryID", "TerritoryDescription"
+    }),
+    
+    #"SSMS_WithSource" = Table.AddColumn(SSMS_Prepared, "Source", each "SSMS"),
+
+    // =========================================================================
+    // ÉTAPE 2: Préparer Employees_Excel
+    // =========================================================================
+    Excel_Prepared = Table.SelectColumns(#"Employees_Excel", {
+        "ID", "Last Name", "First Name", "City", "State/Province"
+    }),
+    
+    #"Excel_WithSource" = Table.AddColumn(Excel_Prepared, "Source", each "EXCEL"),
+
+    // =========================================================================
+    // ÉTAPE 3: Standardiser les noms de colonnes pour l'union
+    // =========================================================================
+    SSMS_Standardized = Table.RenameColumns(#"SSMS_WithSource", {
+        {"EmployeeID", "id_employee_prod"},
+        {"LastName", "Nom"},
+        {"FirstName", "Prenom"},
+        {"TerritoryID", "Territory"},
+        {"TerritoryDescription", "TerritoryDesc"},
+        {"Region", "Region"},
+        {"Source", "source_prod"}
+    }),
+
+    Excel_Standardized = Table.RenameColumns(#"Excel_WithSource", {
+        {"ID", "id_employee_prod"},
+        {"Last Name", "Nom"},
+        {"First Name", "Prenom"},
+        {"City", "Territory"},
+        {"State/Province", "TerritoryDesc"},
+        {"Source", "source_prod"}
+    }),
+    
+    // Ajouter Region vide pour Excel
+    #"Excel_WithRegion" = Table.AddColumn(Excel_Standardized, "Region", each null, type text),
+
+    // =========================================================================
+    // ÉTAPE 4: Combiner les deux sources
+    // =========================================================================
+    CombinedData = Table.Combine({SSMS_Standardized, #"Excel_WithRegion"}),
+
+    // =========================================================================
+    // ÉTAPE 5: Convertir id_employee_prod en texte pour uniformité
+    // =========================================================================
+    #"TypeCorrige" = Table.TransformColumnTypes(CombinedData, {
+        {"id_employee_prod", type text}
+    }),
+
+    // =========================================================================
+    // ÉTAPE 6: Ajouter l'ID séquentiel unique
+    // =========================================================================
+    #"AddedIndex" = Table.AddIndexColumn(#"TypeCorrige", "id_seqEmployee", 1, 1, Int64.Type),
+// =========================================================================
+    // ÉTAPE 7: Sélectionner l'ordre final des colonnes
+    // =========================================================================
+    #"FinalColumns" = Table.SelectColumns(#"AddedIndex", {
+        "id_seqEmployee",
+        "id_employee_prod", 
+        "source_prod",
+        "Nom",
+        "Prenom",
+        "Territory",
+        "TerritoryDesc",
+        "Region"
+    })
+in
+    #"FinalColumns"

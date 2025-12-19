@@ -1,0 +1,50 @@
+// DIM_TEMPS - VERSION FORMAT 03/2006
+let
+    // =========================================================================
+    // ÉTAPE 1: Extraire TOUTES les dates des sources
+    // =========================================================================
+    Dates_TempsExcel = Table.SelectColumns(#"Temps_Excel", {"Order Date"}),
+    #"Renomme_TempsExcel" = Table.RenameColumns(Dates_TempsExcel, {{"Order Date", "DateComplete"}}),
+    
+    Dates_Orders = Table.SelectColumns(#"Orders", {"OrderDate"}),
+    #"Renomme_Orders" = Table.RenameColumns(Dates_Orders, {{"OrderDate", "DateComplete"}}),
+    
+    // =========================================================================
+    // ÉTAPE 2: Combiner toutes les dates
+    // =========================================================================
+    ToutesDates = Table.Combine({#"Renomme_TempsExcel", #"Renomme_Orders"}),
+    
+    #"DatesFiltrees" = Table.SelectRows(ToutesDates, each [DateComplete] <> null and [DateComplete] <> ""),
+    
+    #"TypeDate" = Table.TransformColumnTypes(#"DatesFiltrees", {{"DateComplete", type date}}),
+    
+    // =========================================================================
+    // ÉTAPE 3: Créer mois_annee avec format 03/2006
+    // =========================================================================
+    #"AjouteMoisAnnee" = Table.AddColumn(#"TypeDate", "mois_annee", each 
+        Text.PadStart(Text.From(Date.Month([DateComplete])), 2, "0") & "/" & Text.From(Date.Year([DateComplete])), 
+        type text
+    ),
+    
+    #"AjouteAnnee" = Table.AddColumn(#"AjouteMoisAnnee", "annee", each Date.Year([DateComplete]), Int64.Type),
+    
+    // =========================================================================
+    // ÉTAPE 4: GARDER UNIQUEMENT mois_annee DISTINCTS
+    // =========================================================================
+    #"MoisAnneeUniques" = Table.Distinct(Table.SelectColumns(#"AjouteAnnee", {"mois_annee", "annee"})),
+    
+    // =========================================================================
+    // ÉTAPE 5: Ajouter l'ID séquentiel
+    // =========================================================================
+    #"AjouteIndex" = Table.AddIndexColumn(#"MoisAnneeUniques", "id_temps", 1, 1, Int64.Type),
+    
+    // =========================================================================
+    // ÉTAPE 6: Sélectionner les colonnes finales
+    // =========================================================================
+    #"ColonnesFinales" = Table.SelectColumns(#"AjouteIndex", {
+        "id_temps",
+        "annee", 
+        "mois_annee"
+    })
+in
+    #"ColonnesFinales"
