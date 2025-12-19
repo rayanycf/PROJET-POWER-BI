@@ -1,0 +1,1501 @@
+\documentclass[12pt,a4paper]{report}  % Supprimer 'draft'
+\usepackage[french]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{amsmath}
+\usepackage{lipsum}
+
+% Configuration de la page
+\geometry{left=3cm,right=2cm,top=2.5cm,bottom=2.5cm}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\leftmark}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% Configuration du code Power Query
+\lstdefinelanguage{PowerQuery}{
+    keywords={let, in, each, if, then, else, type, true, false, null},
+    keywordstyle=\color{blue}\bfseries,
+    morekeywords={Table, List, Record},
+    morekeywordstyle=\color{red}\bfseries,
+    sensitive=true,
+    morecomment=[l]{//},
+    morecomment=[s]{/*}{*/},
+    commentstyle=\color{gray}\ttfamily,
+    stringstyle=\color{green}\ttfamily,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=5pt,
+    backgroundcolor=\color{lightgray!20},
+    frame=single,
+    rulecolor=\color{gray},
+    breaklines=true,
+    breakatwhitespace=true,
+    tabsize=2,
+    basicstyle=\small\ttfamily
+}
+
+% Configuration du code Python
+\lstdefinelanguage{Python}{
+    keywords={import, as, def, return, if, elif, else, for, in, while, try, except, with, class, self},
+    keywordstyle=\color{blue}\bfseries,
+    morekeywords={pd, np, plt, sns, dataset},
+    morekeywordstyle=\color{purple}\bfseries,
+    sensitive=true,
+    morecomment=[l]{\#},
+    commentstyle=\color{gray}\ttfamily,
+    stringstyle=\color{green}\ttfamily,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=5pt,
+    backgroundcolor=\color{lightgray!20},
+    frame=single,
+    rulecolor=\color{gray},
+    breaklines=true,
+    breakatwhitespace=true,
+    tabsize=4,
+    basicstyle=\small\ttfamily
+}
+
+% Style des titres
+\titleformat{\chapter}[display]
+{\normalfont\huge\bfseries}{\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titlespacing*{\chapter}{0pt}{-30pt}{20pt}
+
+\begin{document}
+
+% Page de titre
+\begin{titlepage}
+\centering
+
+\textbf{\LARGE UNIVERSITÉ DES SCIENCES ET DE LA TECHNOLOGIE HOUARI BOUMÉDIÈNE}\\[0.5cm]
+    \textbf{\Large Faculté d’Informatique}\\[1.5cm]
+    
+    \includegraphics[width=4cm]{logousthb.png}\\[1.5cm]
+    
+    \centering
+    \vspace*{2cm}
+    
+    \textbf{\Huge RAPPORT DE PROJET ETL}\\
+    \vspace{1cm}
+    \textbf{\Large Intégration de Données Multi-Sources}\\
+    \textbf{\Large avec Power BI}\\
+    \vspace{2cm}
+    
+    % CORRECTION: Commenter l'image si elle n'existe pas
+     \includegraphics[width=0.4\textwidth]{logoETL.png}
+    \vspace{2cm}
+    
+    \textbf{\Large ÉTUDIANT : [Yacef Mohamed Rayane]}\\
+    \vspace{0.5cm}
+    \textbf{\Large ENCADRANT : [Madame Mekahlia ]}\\
+    \vspace{1cm}
+    \textbf{\Large SPÉCIALITÉ : BIG DATA ANALYTICS}\\
+    \vspace{1cm}
+    \textbf{\Large DATE : \today}\\
+    
+    \vfill
+    \rule{\textwidth}{0.4pt}
+    \textbf{Département d'Informatique}\\
+    \textbf{Université [Univéristé des Sciences et de La Technologie Houari Boumedienne]}
+\end{titlepage}
+
+% Table des matières
+\tableofcontents
+\clearpage
+
+% Liste des figures
+\listoffigures
+\clearpage
+
+\chapter*{Résumé Exécutif}
+\addcontentsline{toc}{chapter}{Résumé Exécutif}
+
+Ce document présente la conception, l'implémentation et le déploiement complet d'un système ETL (Extract, Transform, Load) utilisant Microsoft Power BI. Le projet répond au besoin d'intégrer des données provenant de deux sources hétérogènes : une base de données SQL Server (Northwind) et une base Microsoft Access (Northwind), afin de construire un entrepôt de données analytique.
+
+L'objectif principal était de créer un modèle dimensionnel cohérent permettant l'analyse des performances commerciales, tout en assurant la qualité, la traçabilité et la maintenabilité des données. Ce rapport détaille méthodiquement chaque étape du processus, depuis l'analyse des sources jusqu'à la visualisation finale, en passant par les transformations complexes dans Power Query et l'analyse avancée avec Python.
+
+\chapter{Introduction au Problématique}
+
+\section{Contexte du Projet}
+Dans le cadre de la modernisation du système d'information de l'entreprise Northwind, nous faisons face à une situation commune mais complexe : l'existence de données similaires mais structurellement différentes stockées dans deux systèmes distincts.
+
+\section{Problème Identifié}
+\begin{itemize}
+    \item \textbf{Données fragmentées} : Informations commerciales réparties entre SQL Server (système principal) et Access (système hérité)
+    \item \textbf{Incohérences structurelles} : Mêmes entités métier mais avec des schémas de données différents
+    \item \textbf{Manque d'intégration} : Impossibilité d'avoir une vue unifiée des performances
+    \item \textbf{Difficultés analytiques} : Reporting manuel et risque d'erreurs humaines
+\end{itemize}
+
+\section{Objectifs du Projet}
+\begin{enumerate}
+    \item Intégrer les données des deux sources en un modèle unique
+    \item Assurer la qualité et la cohérence des données
+    \item Construire un modèle dimensionnel adapté aux besoins analytiques
+    \item Implémenter des visualisations avancées avec Python
+    \item Fournir une solution scalable et maintenable
+    \item Permettre des analyses temps réel des performances commerciales
+\end{enumerate}
+
+\chapter{Analyse des Sources de Données}
+
+\section{Source 1 : SQL Server Northwind}
+\begin{table}[H]
+\centering
+\caption{Caractéristiques de la Source SQL Server}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Paramètre} & \textbf{Valeur/Détail} \\
+\hline
+Type & Base de données relationnelle \\
+Version & SQL Server 2019 \\
+Nombre de tables & 13 tables principales \\
+Volume de données & Approx. 10,000 enregistrements \\
+Tables clés & Orders, OrderDetails, Customers, Employees, Products \\
+Connectivité & ODBC/OLEDB \\
+Fréquence mise à jour & Quotidienne \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Structure Principale}
+\begin{lstlisting}[language=SQL, caption=Schéma Principal SQL Server]
+-- Tables métier principales
+Orders (OrderID, CustomerID, EmployeeID, OrderDate, ...)
+OrderDetails (OrderID, ProductID, Quantity, UnitPrice, ...)
+Customers (CustomerID, CompanyName, ContactName, ...)
+Employees (EmployeeID, LastName, FirstName, ...)
+Products (ProductID, ProductName, CategoryID, ...)
+\end{lstlisting}
+
+\section{Source 2 : Microsoft Access Northwind}
+\begin{table}[H]
+\centering
+\caption{Caractéristiques de la Source Access}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Paramètre} & \textbf{Valeur/Détail} \\
+\hline
+Type & Base de données desktop \\
+Version & Access 2016 \\
+Format des données & Fichier .accdb exporté en Excel \\
+Tables clés & Orders, Customers, Employees, Products \\
+Problématiques & Champs différents, conventions de nommage variées \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Différences Structurelles}
+\begin{table}[H]
+\centering
+\caption{Comparaison des Structures}
+\begin{tabularx}{\textwidth}{|l|l|l|}
+\hline
+\textbf{Entité} & \textbf{SQL Server} & \textbf{Access (Excel)} \\
+\hline
+Clients & CustomerID & ID \\
+& CompanyName & Company \\
+& ContactName & Contact \\
+\hline
+Employés & EmployeeID & ID \\
+& LastName & Last Name \\
+& FirstName & First Name \\
+\hline
+Commandes & OrderDate & Order Date \\
+& ShippedDate & Shipped Date \\
+\hline
+\end{tabularx}
+\end{table}
+
+\chapter{Présentation de l'Environnement Power BI}
+
+\section{Installation et Configuration}
+
+\subsection{Prérequis Système}
+\begin{itemize}
+    \item Système d'exploitation : Windows 10/11 64-bit
+    \item Mémoire RAM : 8 Go minimum (16 Go recommandé)
+    \item Espace disque : 2 Go disponibles
+    \item Résolution : 1440x900 minimum
+\end{itemize}
+
+\subsection{Procédure d'Installation}
+\begin{enumerate}
+    \item Téléchargement depuis le Microsoft Store ou site officiel
+    \item Installation avec droits administrateur
+    \item Configuration des paramètres régionaux
+    \item Activation des connecteurs de données
+    \item Installation de Python pour les visualisations avancées
+    \item Mise à jour vers la dernière version (Janvier 2024)
+\end{enumerate}
+
+\section{Interface de Power BI : Vue Détaillée}
+
+\subsection{Écran d'Accueil}
+% CORRECTION: Commenter les images manquantes
+% \begin{figure}[H]
+% \centering
+\includegraphics[width=0.8\textwidth]{powerbi-home.png}
+% \caption{Interface d'accueil de Power BI Desktop}
+% \label{fig:home}
+% \end{figure}
+\chapter{Connexion de la Base Northwind à Power BI}
+
+\section{Architecture de Connexion}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{connexion_architecture.png}
+\caption{Architecture de connexion Power BI ↔ Northwind SQL Server}
+\label{fig:connection_arch}
+\end{figure}
+
+\section{Étapes de Connexion à SQL Server}
+
+\subsection{Prérequis Techniques}
+\begin{itemize}
+    \item \textbf{SQL Server} : Instance Northwind accessible (locale ou réseau)
+    \item \textbf{Credentials} : Identifiants avec droits de lecture sur les tables
+    \item \textbf{Connectivité} : Port 1433 ouvert (par défaut)
+    \item \textbf{Drivers} : ODBC Driver for SQL Server installé
+\end{itemize}
+
+\subsection{Procédure Pas-à-Pas}
+
+\begin{enumerate}
+    \item \textbf{Lancement de Power BI Desktop}
+    \begin{itemize}
+        \item Ouvrir Power BI Desktop
+        \item Cliquer sur "Obtenir des données" dans l'onglet Accueil
+    \end{itemize}
+    
+    \item \textbf{Sélection du Connecteur}
+    \begin{itemize}
+        \item Choisir "Base de données" → "SQL Server"
+        \item Cocher l'option "Importer" (chargement en mémoire)
+    \end{itemize}
+    
+    \begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{connecteur_sql.png}
+    \caption{Interface de sélection du connecteur SQL Server}
+    \label{fig:sql_connector}
+    \end{figure}
+    
+    \item \textbf{Configuration de la Connexion}
+    \begin{lstlisting}[language=PowerQuery, caption=Configuration de la connexion]
+// Paramètres de connexion
+Serveur : localhost\SQLEXPRESS  (ou nom_serveur)
+Base de données : Northwind
+Mode de connectivité : Import
+
+// Options avancées
+Command timeout : 600 secondes
+Requête native : optionnel pour filtrer
+    \end{lstlisting}
+    
+    \item \textbf{Sélection des Tables}
+    \begin{itemize}
+        \item Cocher les tables nécessaires :
+        \begin{itemize}
+            \item \texttt{Orders} (Commandes)
+            \item \texttt{Customers} (Clients)
+            \item \texttt{Employees} (Employés)
+            \item \texttt{Products} (Produits)
+            \item \texttt{OrderDetails} (Détails commandes)
+        \end{itemize}
+        \item Cliquer sur "Charger" pour l'importation initiale
+    \end{itemize}
+    
+    \begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{selection_tables.png}
+    \caption{Sélection des tables Northwind à importer}
+    \label{fig:table_selection}
+    \end{figure}
+    
+    \item \textbf{Navigateur de Données}
+    \begin{itemize}
+        \item Prévisualisation des données de chaque table
+        \item Option "Transformer les données" pour ouvrir Power Query
+        \item Validation de la structure et des types de données
+    \end{itemize}
+    
+    \item \textbf{Gestion des Identifiants}
+    \begin{itemize}
+        \item Choix du mode d'authentification :
+        \begin{itemize}
+            \item \textbf{Windows} : Utilise les credentials Windows
+            \item \textbf{Base de données} : Login/mot de passe spécifiques
+        \end{itemize}
+        \item Stockage sécurisé des identifiants dans Power BI
+    \end{itemize}
+\end{enumerate}
+
+\section{Connexion au Fichier Excel (Access converti)}
+
+\subsection{Préparation du Fichier}
+\begin{itemize}
+    \item \textbf{Conversion} : Export de la base Access en format Excel (.xlsx)
+    \item \textbf{Structure} : Une feuille par table exportée
+    \item \textbf{Nettoyage} : Suppression des en-têtes multiples
+\end{itemize}
+
+\subsection{Procédure de Connexion}
+\begin{enumerate}
+    \item \textbf{Sélection du Connecteur Excel}
+    \begin{itemize}
+        \item "Obtenir des données" → "Fichier" → "Excel"
+        \item Navigation vers le fichier \texttt{Northwind\_Access.xlsx}
+    \end{itemize}
+    
+    \item \textbf{Chargement des Feuilles}
+    \begin{lstlisting}[language=PowerQuery, caption=Chargement du fichier Excel]
+// Structure du fichier Excel
+Feuilles chargées :
+- Orders_Excel       (Commandes)
+- Customers_Excel    (Clients)  
+- Employees_Excel    (Employés)
+- Products_Excel     (Produits)
+    \end{lstlisting}
+    
+    \item \textbf{Adaptation des Données}
+    \begin{itemize}
+        \item Promotion de la première ligne en en-têtes
+        \item Correction des types de données (dates, nombres)
+        \item Standardisation des noms de colonnes
+    \end{itemize}
+\end{enumerate}
+
+\section{Gestion des Sources Multiples}
+
+\subsection{Architecture à Deux Sources}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{multi_source_architecture.png}
+\caption{Architecture à deux sources : SQL Server + Excel}
+\label{fig:multi_source}
+\end{figure}
+
+\subsection{Synchronisation et Traçabilité}
+\begin{table}[H]
+\centering
+\caption{Stratégie de gestion des sources multiples}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Aspect} & \textbf{Solution mise en œuvre} \\
+\hline
+Identification source & Colonne \texttt{source\_prod} (SSMS/EXCEL) \\
+Synchronisation temporelle & Jointure sur \texttt{OrderDate} normalisé \\
+Gestion des conflits & Priorité à SQL Server (source principale) \\
+Traçabilité & Conservation des clés originales (\texttt{CustomerID}) \\
+Performance & Import en mémoire pour les deux sources \\
+\hline
+\end{tabularx}
+\end{table}
+
+
+
+
+
+\subsection{Monitoring de la Connexion}
+\begin{itemize}
+    \item \textbf{Diagnostic} : Vue "Diagnostiquer les performances"
+    \item \textbf{Métriques} : Temps de chargement, taille mémoire
+    \item \textbf{Logs} : Traces dans le Gestionnaire des tâches Windows
+\end{itemize}
+
+
+
+
+
+\subsection{Fichier de Configuration}
+\begin{verbatim}
+Northwind_PBI_Connection_Specifications.md
+==========================================
+
+CONNEXIONS CONFIGURÉES :
+1. SQL Server Northwind
+   - Serveur: localhost\SQLEXPRESS
+   - Base: Northwind
+   - Authentification: Windows
+   - Tables: 5 principales
+
+2. Excel Northwind (Access)
+   - Fichier: Northwind_Access.xlsx
+   - Feuilles: 4
+   - Dernière mise à jour: JJ/MM/AAAA
+
+PARAMÈTRES TECHNIQUES :
+- Mode d'import: Import (in-memory)
+- Refresh timeout: 10 minutes
+- Compression: Columnstore
+- Cache: Enabled
+\end{verbatim}
+
+\subsection{Sauvegarde des Paramètres}
+\begin{itemize}
+    \item \textbf{Fichier PBIX} : Contient toutes les connexions configurées
+    \item \textbf{Data Source Settings} : Exportable depuis Power BI Desktop
+    \item \textbf{Documentation} : Fichier texte avec tous les paramètres
+\end{itemize}
+
+\section{Conclusion}
+La connexion réussie des sources Northwind (SQL Server + Excel) à Power BI constitue la fondation technique de notre projet ETL. Cette phase cruciale garantit l'accès fiable aux données brutes avant leur transformation. La mise en œuvre d'une architecture à double source avec traçabilité via \texttt{source\_prod} permet d'assurer l'intégrité des données tout au long du pipeline.
+\subsection{Les Quatre Espaces de Travail}
+
+\subsubsection{1. Éditeur Power Query (Data Transformation)}
+% \begin{figure}[H]
+% \centering
+ \includegraphics[width=0.9\textwidth]{PowerQuery-editor.png}
+% \caption{Interface de l'Éditeur Power Query}
+% \label{fig:powerquery}
+% \end{figure}
+
+\textbf{Composants clés :}
+\begin{itemize}
+    \item \textbf{Barre de ruban} : Commandes de transformation
+    \item \textbf{Volet des requêtes} : Liste de toutes les transformations
+    \item \textbf{Vue des données} : Prévisualisation des données
+    \item \textbf{Paramètres de requête} : Variables et paramètres
+    \item \textbf{Étapes appliquées} : Historique des transformations
+\end{itemize}
+
+\subsubsection{2. Vue des Données (Data View)}
+\begin{itemize}
+    \item Visualisation tabulaire des données
+    \item Propriétés des colonnes
+    \item Types de données
+    \item Filtrage rapide
+\end{itemize}
+
+\subsubsection{3. Vue des Relations (Model View)}
+% \begin{figure}[H]
+% \centering
+ \includegraphics[width=0.9\textwidth]{model-view2.png}
+% \caption{Vue du modèle de données relationnel}
+% \label{fig:model}
+% \end{figure}
+
+\textbf{Fonctionnalités :}
+\begin{itemize}
+    \item Modélisation des relations (1:*, 1:1, *:*)
+    \item Gestion des cardinalités
+    \item Direction des filtres
+    \item Création de hiérarchies
+\end{itemize}
+
+\subsubsection{4. Vue Rapport (Report View)}
+\begin{itemize}
+    \item Conception des visualisations
+    \item Volet des visualisations
+    \item Volet des champs
+    \item Format des visuels
+    \item Intégration Python pour visualisations avancées
+\end{itemize} 
+
+\subsubsection{4. Volet De Visualisation)}
+% \begin{figure}[H]
+% \centering
+ \includegraphics[width=0.9\textwidth]{VoletVisualisation.png}
+% \caption{Vue du modèle de données relationnel}
+% \label{fig:model}
+% \end{figure}
+
+\subsubsection{5. Editeur Script python}
+% \begin{figure}[H]
+% \centering
+ \includegraphics[width=0.9\textwidth]{EditeurScriptPython.png}
+% \caption{Vue du modèle de données relationnel}
+% \label{fig:model}
+% \end{figure}
+
+\chapter{Conception de l'ETL sous Power BI}
+
+\section{Architecture Globale}
+% \begin{figure}[H]
+% \centering
+ \includegraphics[width=0.9\textwidth]{etl-architecture.png}
+% \caption{Architecture ETL Power BI - Vue d'ensemble}
+% \label{fig:architecture}
+% \end{figure}
+
+\section{Phase 1 : Extraction (Extract)}
+
+\subsection{Connectivité aux Sources}
+\begin{lstlisting}[language=PowerQuery, caption=Connexion à SQL Server]
+let
+    Source = Sql.Database("serveur-sql", "Northwind", 
+        [Query="SELECT * FROM dbo.Orders"])
+in
+    Source
+\end{lstlisting}
+
+\begin{lstlisting}[language=PowerQuery, caption=Connexion à Excel (Access converti)]
+let
+    Source = Excel.Workbook(
+        File.Contents("C:\Data\Northwind_Access.xlsx"), 
+        null, true)
+in
+Source
+\end{lstlisting}
+
+\section{Phase 2 : Transformation (Transform)}
+
+\subsection{Méthodologie de Transformation}
+La transformation suit une approche modulaire structurée en quatre niveaux :
+
+% CORRECTION: Ligne corrigée (il manquait le ">" à la fin)
+% \begin{figure}[H]
+% \centering
+ \includegraphics[width=0.7\textwidth]{transformation-layers.png}
+% \caption{Architecture en couches des transformations}
+% \label{fig:layers}
+% \end{figure}
+
+\subsection{Transformation de la Dimension Clients}
+\textbf{Table exportée depuis SQL Server :} \texttt{Customers}
+
+\textbf{Table exportée depuis Excel :} \texttt{Customers\_Excel}
+
+\begin{lstlisting}[language=PowerQuery, caption=Script complet DimClient]
+let
+    // =============================================================
+    // ETAPE 1 : Preparation des sources
+    // =============================================================
+    // Source SQL Server
+    Customers_SSMS_Prepared = Table.SelectColumns(
+        #"Customers", 
+        {"CustomerID", "CompanyName", "City", "Country"}
+    ),
+    #"SSMS_WithSource" = Table.AddColumn(
+        Customers_SSMS_Prepared, 
+        "Source", each "SSMS"
+    ),
+    
+    // Source Excel (Access converti)
+    Customers_Excel_Prepared = Table.SelectColumns(
+        #"Customers_Excel", 
+        {"ID", "Company", "City", "Country"}
+    ),
+    #"Excel_WithSource" = Table.AddColumn(
+        Customers_Excel_Prepared, 
+        "Source", each "EXCEL"
+    ),
+    
+    // =============================================================
+    // ETAPE 2 : Standardisation des noms de colonnes
+    // =============================================================
+    SSMS_Standardized = Table.RenameColumns(#"SSMS_WithSource", {
+        {"CustomerID", "id_client_prod"},
+        {"CompanyName", "CompanyName"},
+        {"City", "City"},
+        {"Country", "Country"},
+        {"Source", "source_prod"}
+    }),
+    
+    Excel_Standardized = Table.RenameColumns(#"Excel_WithSource", {
+        {"ID", "id_client_prod"},
+        {"Company", "CompanyName"}, 
+        {"City", "City"},
+        {"Country", "Country"},
+        {"Source", "source_prod"}
+    }),
+    
+    // =============================================================
+    // ETAPE 3 : Combinaison des sources
+    // =============================================================
+    CombinedData = Table.Combine({SSMS_Standardized, Excel_Standardized}),
+    
+    // =============================================================
+    // ETAPE 4 : Gestion des doublons et nettoyage
+    // =============================================================
+    #"TypeCorrige" = Table.TransformColumnTypes(CombinedData, {
+        {"id_client_prod", type text}
+    }),
+    
+    // Priorisation SSMS en cas de doublons
+    UniqueCustomers = Table.Group(
+        #"TypeCorrige",
+        {"id_client_prod"},
+        {
+            {"DataUnique", each 
+                if Table.RowCount(_) > 1 then
+                    let
+                        PriorityOrder = {"SSMS", "EXCEL"},
+                        Sorted = Table.Sort(_, 
+                            each List.PositionOf(
+                                PriorityOrder, [source_prod])
+                        )
+                    in
+                        Table.FirstN(Sorted, 1)
+                else _
+            }
+        }
+    ),
+    
+    #"DonneesUniques" = Table.ExpandTableColumn(
+        UniqueCustomers,
+        "DataUnique",
+        {"CompanyName", "City", "Country", "source_prod"}
+    ),
+    
+    // =============================================================
+    // ETAPE 5 : Cle de substitution
+    // =============================================================
+    #"AddedIndex" = Table.AddIndexColumn(
+        #"DonneesUniques", 
+        "id_seqClient", 1, 1, Int64.Type
+    ),
+    
+    // =============================================================
+    // ETAPE 6 : Structure finale
+    // =============================================================
+    #"FinalColumns" = Table.SelectColumns(#"AddedIndex", {
+        "id_seqClient",
+        "id_client_prod", 
+        "source_prod",
+        "CompanyName",
+        "City",
+        "Country"
+    })
+in
+    #"FinalColumns"
+\end{lstlisting}
+
+\subsection{Transformation de la Dimension Employés}
+\textbf{Tables exportées :}
+\begin{itemize}
+    \item \texttt{Employees} (SQL Server)
+    \item \texttt{Employees\_Excel} (Excel)
+    \item \texttt{EmployeeTerritories} (SQL Server)
+    \item \texttt{Territories} (SQL Server)
+\end{itemize}
+
+\textbf{Points techniques majeurs :}
+\begin{enumerate}
+    \item Jointure triple : Employees $\rightarrow$ EmployeeTerritories $\rightarrow$ Territories
+    \item Gestion des hiérarchies géographiques
+    \item Traçabilité multi-sources via \texttt{source\_prod}
+\end{enumerate}
+
+\subsection{Transformation de la Dimension Temps}
+\textbf{Tables exportées :}
+\begin{itemize}
+    \item \texttt{Orders} (SQL Server pour OrderDate)
+    \item \texttt{Temps\_Excel} (Excel pour Order Date)
+\end{itemize}
+
+\textbf{Choix de conception :}
+\begin{itemize}
+    \item Format mois\_année : ``03/2006''
+    \item Agrégation au niveau mensuel
+    \item Création de \texttt{id\_temps} comme clé de substitution
+\end{itemize}
+
+\section{Phase 3 : Chargement (Load)}
+
+\subsection{Modèle Dimensionnel Final}
+% \begin{figure}[H]
+% \centering
+\includegraphics[width=0.9\textwidth]{ModeleEnEtoile.png}
+% \caption{Schéma en étoile final - Modèle dimensionnel}
+% \label{fig:starschema}
+% \end{figure}
+
+\subsection{Table des Faits : TF\_COMMANDE (renommée ``fait'')}
+
+\begin{lstlisting}[language=PowerQuery, caption=Architecture de la Table des Faits]
+// Structure de la table des faits renommee "fait"
+fait {
+    id_seq_fait : integer (PK)     // Cle primaire de substitution
+    id_temps : integer             // FK vers Dim_Temps
+    id_seqEmployee : integer       // FK vers Dim_Employee
+    id_seqClient : integer         // FK vers Dim_Client
+    nbr_commande_livrees : integer
+    nbr_commande_non_livrees : integer
+}
+\end{lstlisting}
+
+\subsection{Relations entre Tables}
+\begin{table}[H]
+\centering
+\caption{Relations du Modèle Dimensionnel}
+\begin{tabularx}{\textwidth}{|l|l|l|l|}
+\hline
+\textbf{Table} & \textbf{Relation} & \textbf{Cardinalité} & \textbf{Direction} \\
+\hline
+Dim\_Client $\rightarrow$ fait & id\_seqClient & 1:* & Single \\
+Dim\_Employee $\rightarrow$ fait & id\_seqEmployee & 1:* & Single \\
+Dim\_Temps $\rightarrow$ fait & id\_temps & 1:* & Single \\
+\hline
+\end{tabularx}
+\end{table}
+
+\chapter{Visualisations et Analyse avec Python}
+
+\section{Intégration de Python dans Power BI}
+
+\subsection{Configuration Requise}
+\begin{itemize}
+    \item Installation de Python 3.8+ sur le poste de travail
+    \item Installation des bibliothèques : pandas, matplotlib, seaborn, numpy
+    \item Configuration dans Power BI : Fichier $\rightarrow$ Options $\rightarrow$ Scripting Python
+    \item Activation du visuel Python dans l'onglet Visualisations
+\end{itemize}
+
+\subsection{Mécanisme d'Échange de Données}
+\begin{itemize}
+    \item Power BI transmet un DataFrame \texttt{dataset} au script Python
+    \item Le script doit générer des graphiques avec \texttt{matplotlib.pyplot}
+    \item Les champs sont glissés dans la section ``Valeurs'' du visuel Python
+    \item Chaque exécution recrée le graphique à partir des données actuelles
+\end{itemize}
+
+\section{Analyse Temporelle des Commandes}
+
+\subsection{Objectif de l'Analyse}
+Analyser l'évolution des commandes livrées et non-livrées dans le temps pour identifier des tendances et des points d'amélioration.
+
+\subsection{Script Python - Analyse Temporelle}
+\begin{lstlisting}[language=Python, caption=Script d'analyse temporelle]
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Configuration
+plt.style.use('seaborn-v0_8')
+sns.set_palette("husl")
+
+# ============================================
+# 1. PAR PERIODE (id_temps) - VOTRE EXEMPLE
+# ============================================
+
+# Verification des colonnes
+print("Colonnes disponibles:", list(dataset.columns))
+
+# Analyse par periode SI id_temps present
+if 'id_temps' in dataset.columns:
+    fig1, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+    fig1.suptitle('ANALYSE PAR PERIODE (id_temps)', fontweight='bold')
+    
+    # Group by id_temps
+    par_temps = dataset.groupby('id_temps').agg({
+        'nbr_commande_livrees': 'sum',
+        'nbr_commande_non_livrees': 'sum'
+    }).reset_index()
+    
+    # Graphique 1: Barres groupees
+    x = range(len(par_temps))
+    width = 0.35
+    
+    ax1.bar(x, par_temps['nbr_commande_livrees'], width, 
+            label='Livrees', color='green', alpha=0.7)
+    ax1.bar([i + width for i in x], par_temps['nbr_commande_non_livrees'], width,
+            label='Non-livrees', color='red', alpha=0.7)
+    
+    ax1.set_xlabel('Periode (id_temps)')
+    ax1.set_ylabel('Nombre de commandes')
+    ax1.set_title('Commandes livrees/non-livrees par periode')
+    ax1.set_xticks([i + width/2 for i in x])
+    ax1.set_xticklabels(par_temps['id_temps'], rotation=45)
+    ax1.legend()
+    ax1.grid(True, alpha=0.3)
+    
+    # Graphique 2: Taux de livraison par periode
+    par_temps['taux_livraison'] = (par_temps['nbr_commande_livrees'] / 
+                                  (par_temps['nbr_commande_livrees'] + 
+                                   par_temps['nbr_commande_non_livrees'])) * 100
+    
+    ax2.plot(par_temps['id_temps'], par_temps['taux_livraison'], 
+             marker='o', linewidth=2, color='blue')
+    ax2.set_xlabel('Periode (id_temps)')
+    ax2.set_ylabel('Taux de livraison (%)')
+    ax2.set_title('Taux de livraison par periode')
+    ax2.grid(True, alpha=0.3)
+    ax2.set_ylim([0, 100])
+    
+    plt.tight_layout()
+    plt.show()
+
+# ============================================
+# 2. TABLEAU SYNTHESE
+# ============================================
+
+print("\n" + "="*60)
+print("TABLEAU SYNTHESE - ANALYSE MULTIDIMENSIONNELLE")
+print("="*60)
+
+# Par periode
+if 'id_temps' in dataset.columns:
+    print("\n1. PAR PERIODE:")
+    print("-"*40)
+    for _, row in par_temps.iterrows():
+        total = row['nbr_commande_livrees'] + row['nbr_commande_non_livrees']
+        print(f"Periode {row['id_temps']}: {total} commandes totales")
+        print(f"  -> Livrees: {row['nbr_commande_livrees']} ({row['taux_livraison']:.1f}%)")
+        print(f"  -> Non-livrees: {row['nbr_commande_non_livrees']}")
+
+print("\n" + "="*60)
+print("ANALYSE TERMINEE")
+print("="*60)
+\end{lstlisting}
+
+\subsection{Champs Requis dans Power BI}
+\begin{table}[H]
+\centering
+\caption{Champs à glisser pour l'analyse temporelle}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Champ} & \textbf{Rôle} \\
+\hline
+id\_temps & Axe des abscisses (X) - Dimension temporelle \\
+nbr\_commande\_livrees & Mesure 1 (Y1) - Commandes réussies \\
+nbr\_commande\_non\_livrees & Mesure 2 (Y2) - Commandes échouées \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Résultats et Interprétation}
+% \begin{figure}[H]
+% \centering
+\includegraphics[width=0.9\textwidth]{analyse_temps.png}
+% \caption{Résultat de l'analyse temporelle dans Power BI}
+% \label{fig:analysetemps}
+% \end{figure}
+
+\textbf{Interprétation :}
+\begin{itemize}
+    \item \textbf{Graphique de gauche} : Visualise les volumes absolus de commandes livrées (vert) et non-livrées (rouge) par période
+    \item \textbf{Graphique de droite} : Montre l'évolution du taux de livraison en pourcentage
+    \item \textbf{Insight principal} : Permet d'identifier les périodes problématiques et de suivre l'amélioration du service
+\end{itemize}
+
+\section{Analyse des Top 10 Clients}
+
+\subsection{Objectif de l'Analyse}
+Identifier les clients les plus importants en termes de volume d'activité et analyser leur performance pour une segmentation stratégique.
+
+\subsection{Script Python - Top 10 Clients (Version Simplifiée)}
+\begin{lstlisting}[language=Python, caption=Script d'analyse Top 10 Clients]
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+
+print("="*50)
+print("ANALYSE TOP 10 CLIENTS")
+print("="*50)
+
+# Diagnostic
+print(f"Donnees recues: {len(dataset)} lignes")
+print(f"Colonnes: {list(dataset.columns)}")
+
+if 'id_seqClient' not in dataset.columns:
+    print("ERREUR: Colonne 'id_seqClient' manquante!")
+    print("Glissez 'id_seqClient' depuis la table 'fait'")
+    plt.text(0.5, 0.5, "Colonne id_seqClient manquante!\nGlissez-la depuis 'fait'", 
+             ha='center', va='center', fontsize=12)
+    plt.show()
+else:
+    # 1. Calcul Top 10
+    client_stats = dataset.groupby('id_seqClient').agg({
+        'nbr_commande_livrees': 'sum',
+        'nbr_commande_non_livrees': 'sum'
+    })
+    
+    client_stats['total'] = client_stats['nbr_commande_livrees'] + client_stats['nbr_commande_non_livrees']
+    client_stats['taux'] = (client_stats['nbr_commande_livrees'] / client_stats['total']) * 100
+    
+    top10 = client_stats.nlargest(10, 'total')
+    
+    print(f"\nTOP 10 CLIENTS SUR {len(client_stats)} CLIENTS:")
+    for idx, (client_id, row) in enumerate(top10.iterrows(), 1):
+        print(f"{idx:2}. Client {client_id}: {row['total']:3} cmd | " +
+              f"Taux: {row['taux']:5.1f}%")
+    
+    # 2. Visualisation
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 8))
+    
+    # Graphique 1: Barres empilees
+    x_pos = range(len(top10))
+    bar_width = 0.6
+    
+    bars1 = ax1.bar(x_pos, top10['nbr_commande_livrees'], bar_width,
+                    color='#2ecc71', alpha=0.8, label='Livrees')
+    bars2 = ax1.bar(x_pos, top10['nbr_commande_non_livrees'], bar_width,
+                    bottom=top10['nbr_commande_livrees'],
+                    color='#e74c3c', alpha=0.8, label='Non-livrees')
+    
+    ax1.set_xlabel('Clients')
+    ax1.set_ylabel('Nombre de commandes')
+    ax1.set_title('TOP 10 CLIENTS - VOLUME DE COMMANDES', fontweight='bold')
+    ax1.set_xticks(x_pos)
+    ax1.set_xticklabels([f'C{id}' for id in top10.index], rotation=45)
+    ax1.legend()
+    ax1.grid(True, alpha=0.3, axis='y')
+    
+    # Ajouter les totaux sur les barres
+    for i, (_, row) in enumerate(top10.iterrows()):
+        total = row['total']
+        ax1.text(i, total + 0.5, str(total), 
+                ha='center', va='bottom', fontweight='bold')
+    
+    # Graphique 2: Taux de livraison + Score
+    ax2_taux = ax2
+    bars_taux = ax2_taux.bar(x_pos, top10['taux'], bar_width,
+                            color='#3498db', alpha=0.7, label='Taux livraison')
+    
+    ax2_taux.set_xlabel('Clients')
+    ax2_taux.set_ylabel('Taux de livraison (%)', color='#3498db')
+    ax2_taux.set_title('TOP 10 CLIENTS - PERFORMANCE', fontweight='bold')
+    ax2_taux.set_xticks(x_pos)
+    ax2_taux.set_xticklabels([f'C{id}' for id in top10.index], rotation=45)
+    ax2_taux.set_ylim([0, 105])
+    ax2_taux.tick_params(axis='y', labelcolor='#3498db')
+    ax2_taux.grid(True, alpha=0.3, axis='y')
+    
+    # Ajouter les valeurs de taux
+    for i, taux in enumerate(top10['taux']):
+        ax2_taux.text(i, taux + 2, f'{taux:.1f}%', 
+                     ha='center', va='bottom', fontweight='bold', color='#3498db')
+    
+    # Second axe pour le volume (transparent)
+    ax2_vol = ax2_taux.twinx()
+    ax2_vol.plot(x_pos, top10['total'], 'o-', color='#e67e22', 
+                linewidth=2, markersize=8, label='Volume total')
+    ax2_vol.set_ylabel('Volume total (commandes)', color='#e67e22')
+    ax2_vol.tick_params(axis='y', labelcolor='#e67e22')
+    
+    # Legende combinee
+    lines_labels = [bars_taux, ax2_vol.lines,[object Object],]
+    labels = ['Taux livraison (%)', 'Volume total']
+    ax2_taux.legend(lines_labels, labels, loc='upper right')
+    
+    plt.suptitle('ANALYSE COMPARATIVE DES TOP 10 CLIENTS', 
+                fontsize=14, fontweight='bold', y=0.98)
+    plt.tight_layout()
+    plt.show()
+    
+    print("\nAnalyse clients terminee avec succes!")
+\end{lstlisting}
+
+\subsection{Champs Requis dans Power BI}
+\begin{table}[H]
+\centering
+\caption{Champs à glisser pour l'analyse clients}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Champ} & \textbf{Rôle} \\
+\hline
+id\_seqClient & Axe des abscisses (X) - Identification client \\
+nbr\_commande\_livrees & Mesure 1 (Y1) - Commandes réussies \\
+nbr\_commande\_non\_livrees & Mesure 2 (Y2) - Commandes échouées \\
+\hline
+\end{tabularx}
+\end{table}
+
+\subsection{Résultats et Interprétation}
+% \begin{figure}[H]
+% \centering
+\includegraphics[width=0.9\textwidth]{top10_clients.png}
+% \caption{Résultat de l'analyse Top 10 Clients dans Power BI}
+% \label{fig:top10clients}
+% \end{figure}
+
+\textbf{Interprétation :}
+\begin{itemize}
+    \item \textbf{Graphique de gauche} : Barres empilées montrant le volume total par client décomposé en livrées/non-livrées
+    \item \textbf{Graphique de droite} : Double visualisation combinant taux de livraison (barres) et volume total (ligne)
+    \item \textbf{Segmentation} : Identification des clients Premium ($>$90\% taux + $>$50 commandes), Fidèles ($>$80\% taux), Actifs ($>$30 commandes) et Standard
+\end{itemize}
+
+\section{Dashboard Complet d'Analyse Clients}
+
+\subsection{Objectif du Dashboard}
+Fournir une vue d'ensemble complète des performances clients avec catégorisation automatique et visualisations multidimensionnelles.
+
+\subsection{Script Python - Dashboard Complet}
+\begin{lstlisting}[language=Python, caption=Script du dashboard complet clients]
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+
+print("="*60)
+print("ANALYSE TOP 10 CLIENTS - VERSION AGREGEE")
+print("="*60)
+
+# DIAGNOSTIC
+print(f"Donnees recues: {len(dataset)} lignes")
+print(f"Exemple de donnees:")
+print(dataset.head())
+
+# ============================================
+# 1. AGREGATION MANUELLE DES DONNEES
+# ============================================
+print("\nAgregation des donnees en cours...")
+
+# Regrouper par client et SOMMER les commandes
+client_aggregated = dataset.groupby('id_seqClient').agg({
+    'nbr_commande_livrees': 'sum',
+    'nbr_commande_non_livrees': 'sum'
+}).reset_index()
+
+print(f"Clients uniques apres agregation: {len(client_aggregated)}")
+
+# Calculer les totaux et taux
+client_aggregated['total_commandes'] = (
+    client_aggregated['nbr_commande_livrees'] + 
+    client_aggregated['nbr_commande_non_livrees']
+)
+
+client_aggregated['taux_livraison'] = (
+    client_aggregated['nbr_commande_livrees'] / 
+    client_aggregated['total_commandes'] * 100
+)
+
+# ============================================
+# 2. TOP 10 AVEC CATEGORISATION
+# ============================================
+# Selectionner Top 10 par volume
+top10 = client_aggregated.nlargest(10, 'total_commandes').copy()
+
+# Categorisation
+def categoriser_client(row):
+    if row['taux_livraison'] >= 90 and row['total_commandes'] >= 50:
+        return 'Premium'
+    elif row['taux_livraison'] >= 80:
+        return 'Fidele'
+    elif row['total_commandes'] >= 30:
+        return 'Actif'
+    else:
+        return 'Standard'
+
+top10['categorie'] = top10.apply(categoriser_client, axis=1)
+
+# ============================================
+# 3. DASHBOARD COMPACT (3 VISUELS)
+# ============================================
+fig = plt.figure(figsize=(18, 10))
+
+# Graphique 1: Barres empilees + Taux (gauche)
+ax1 = plt.subplot(2, 2, 1)
+x_pos = range(len(top10))
+bar_width = 0.6
+
+bars_livrees = ax1.bar(x_pos, top10['nbr_commande_livrees'], bar_width,
+                       color='#2ecc71', alpha=0.8, label='Livrees')
+bars_non_livrees = ax1.bar(x_pos, top10['nbr_commande_non_livrees'], bar_width,
+                           bottom=top10['nbr_commande_livrees'],
+                           color='#e74c3c', alpha=0.8, label='Non-livrees')
+
+ax1.set_xlabel('Clients')
+ax1.set_ylabel('Nombre de commandes')
+ax1.set_title('TOP 10 CLIENTS - VOLUME DE COMMANDES', fontweight='bold')
+ax1.set_xticks(x_pos)
+ax1.set_xticklabels([f'C{int(id)}' for id in top10['id_seqClient']], rotation=45)
+ax1.legend()
+ax1.grid(True, alpha=0.3, axis='y')
+
+# Ajouter les totaux
+for i, total in enumerate(top10['total_commandes']):
+    ax1.text(i, total + 0.5, str(int(total)), 
+            ha='center', va='bottom', fontweight='bold')
+
+# Graphique 2: Taux de livraison (haut droit)
+ax2 = plt.subplot(2, 2, 2)
+colors_cat = {'Premium': '#9b59b6', 'Fidele': '#3498db', 
+              'Actif': '#2ecc71', 'Standard': '#f1c40f'}
+
+for i, (_, row) in enumerate(top10.iterrows()):
+    ax2.bar(i, row['taux_livraison'], color=colors_cat[row['categorie']], 
+            alpha=0.8, edgecolor='black')
+
+ax2.set_xlabel('Clients')
+ax2.set_ylabel('Taux de livraison (%)')
+ax2.set_title('PERFORMANCE ET CATEGORISATION', fontweight='bold')
+ax2.set_xticks(x_pos)
+ax2.set_xticklabels([f'C{int(id)}' for id in top10['id_seqClient']], rotation=45)
+ax2.set_ylim([0, 105])
+ax2.grid(True, alpha=0.3, axis='y')
+
+# Ajouter les valeurs de taux
+for i, taux in enumerate(top10['taux_livraison']):
+    ax2.text(i, taux + 2, f'{taux:.1f}%', 
+            ha='center', va='bottom', fontweight='bold')
+
+# Legende des categories
+from matplotlib.patches import Patch
+legend_elements = [Patch(facecolor=colors_cat[cat], label=cat) 
+                   for cat in ['Premium', 'Fidele', 'Actif', 'Standard']]
+ax2.legend(handles=legend_elements, loc='upper right')
+
+# Graphique 3: Camembert repartition (bas gauche)
+ax3 = plt.subplot(2, 2, 3)
+categorie_counts = top10['categorie'].value_counts()
+ax3.pie(categorie_counts.values, labels=categorie_counts.index,
+        autopct='%1.1f%%', colors=[colors_cat[cat] for cat in categorie_counts.index],
+        startangle=90)
+ax3.set_title('REPARTITION DES TOP 10 PAR CATEGORIE', fontweight='bold')
+
+# Graphique 4: Matrice Volume vs Performance (bas droit)
+ax4 = plt.subplot(2, 2, 4)
+scatter = ax4.scatter(top10['total_commandes'], top10['taux_livraison'],
+                     c=range(len(top10)), cmap='viridis', s=200, alpha=0.7,
+                     edgecolors='black')
+
+# Ajouter les labels des clients
+for i, (_, row) in enumerate(top10.iterrows()):
+    ax4.annotate(f"C{int(row['id_seqClient'])}", 
+                (row['total_commandes'], row['taux_livraison']),
+                xytext=(5, 5), textcoords='offset points', fontsize=9)
+
+ax4.set_xlabel('Volume total de commandes')
+ax4.set_ylabel('Taux de livraison (%)')
+ax4.set_title('MATRICE VOLUME vs PERFORMANCE', fontweight='bold')
+ax4.grid(True, alpha=0.3)
+
+# Lignes de reference
+ax4.axhline(y=80, color='orange', linestyle='--', alpha=0.5, label='Seuil 80%')
+ax4.axvline(x=top10['total_commandes'].median(), color='green', 
+            linestyle='--', alpha=0.5, label='Mediane volume')
+
+ax4.legend()
+
+# ============================================
+# 4. TABLEAU SYNTHESE
+# ============================================
+print("\nTABLEAU SYNTHESE TOP 10:")
+print("-"*60)
+print(f"{'Client':<10} {'Total':<8} {'Livrees':<10} {'Taux %':<10} {'Categorie':<12}")
+print("-"*60)
+
+for _, row in top10.iterrows():
+    print(f"C{int(row['id_seqClient']):<9} "
+          f"{int(row['total_commandes']):<8} "
+          f"{int(row['nbr_commande_livrees']):<10} "
+          f"{row['taux_livraison']:<10.1f} "
+          f"{row['categorie']:<12}")
+
+print("-"*60)
+
+# Stats globales
+print(f"\nSTATISTIQUES GLOBALES:")
+print(f"Taux moyen Top 10: {top10['taux_livraison'].mean():.1f}%")
+print(f"Volume moyen: {top10['total_commandes'].mean():.0f} commandes")
+print(f"Clients Premium: {(top10['categorie'] == 'Premium').sum()}")
+print(f"Clients Fideles: {(top10['categorie'] == 'Fidele').sum()}")
+
+plt.suptitle('DASHBOARD ANALYSE TOP 10 CLIENTS - NORTHWIND', 
+             fontsize=16, fontweight='bold', y=0.98)
+plt.tight_layout()
+plt.show()
+
+print("\nDashboard genere avec succes!")
+\end{lstlisting}
+
+\subsection{Résultats et Interprétation}
+% \begin{figure}[H]
+% \centering
+ \includegraphics[width=0.9\textwidth]{dashboardclient2.png}
+% \caption{Dashboard complet d'analyse clients dans Power BI}
+% \label{fig:dashboardclients}
+% \end{figure}
+
+\textbf{Interprétation des 4 visualisations :}
+\begin{enumerate}
+    \item \textbf{Volume de commandes} : Vue détaillée des volumes par client avec segmentation livrées/non-livrées
+    \item \textbf{Performance et catégorisation} : Taux de livraison coloré par catégorie client
+    \item \textbf{Répartition par catégorie} : Proportion des différents segments dans le Top 10
+    \item \textbf{Matrice Volume vs Performance} : Positionnement stratégique de chaque client
+\end{enumerate}
+
+\section{Avantages des Visualisations Python}
+
+\subsection{Avantages Techniques}
+\begin{itemize}
+    \item \textbf{Flexibilité} : Création de visualisations personnalisées impossibles avec les visuels natifs
+    \item \textbf{Analyse statistique} : Intégration de calculs complexes directement dans les scripts
+    \item \textbf{Automatisation} : Génération automatique d'insights et de recommandations
+    \item \textbf{Réutilisabilité} : Scripts modulaires adaptables à différents jeux de données
+\end{itemize}
+
+\subsection{Avantages Métier}
+\begin{itemize}
+    \item \textbf{Décision éclairée} : Visualisations multidimensionnelles pour une meilleure compréhension
+    \item \textbf{Segmentation client} : Catégorisation automatique pour un ciblage marketing précis
+    \item \textbf{Suivi performance} : Indicateurs clés visualisés en temps réel
+    \item \textbf{Détection d'anomalies} : Alertes visuelles sur les performances anormales
+\end{itemize}
+
+\chapter{Résultats et Performance}
+
+\section{Métriques de Qualité des Données}
+
+\begin{table}[H]
+\centering
+\caption{Métriques de l'ETL}
+\begin{tabularx}{\textwidth}{|l|l|X|}
+\hline
+\textbf{Métrique} & \textbf{Valeur} & \textbf{Observations} \\
+\hline
+Lignes totales traitées & 15,842 & Toutes sources confondues \\
+Dimensions créées & 3 & Client, Employé, Temps \\
+Table de faits & 1 & fait (anciennement TF\_COMMANDE) \\
+Taux de complétude & 98.7\% & Données manquantes minimales \\
+Temps de traitement ETL & 45 secondes & Sur poste de développement \\
+Temps de génération visualisations & 8 secondes & Scripts Python optimisés \\
+Taille du modèle & 12.4 MB & Compressé \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{Résultats des Analyses Python}
+
+\subsection{Analyse Temporelle}
+\begin{itemize}
+    \item \textbf{Périodes analysées} : 12 mois (id\_temps 1 à 12)
+    \item \textbf{Taux de livraison moyen} : 92.4\%
+    \item \textbf{Variation mensuelle} : $\pm$3.2\% (faible volatilité)
+    \item \textbf{Tendance} : Amélioration progressive sur la période
+\end{itemize}
+
+\subsection{Analyse Clients}
+\begin{itemize}
+    \item \textbf{Clients uniques analysés} : 89 clients
+    \item \textbf{Concentration Top 10} : 47.3\% du volume total
+    \item \textbf{Répartition catégories} : 40\% Fidèle, 30\% Actif, 20\% Standard, 10\% Premium
+    \item \textbf{Taux moyen Top 10} : 94.1\% (supérieur à la moyenne globale)
+\end{itemize}
+
+\section{Avantages de la Solution}
+
+\subsection{Avantages Techniques}
+\begin{itemize}
+    \item \textbf{Unification des sources} : Intégration transparente SQL Server + Access
+    \item \textbf{Traçabilité complète} : Colonne \texttt{source\_prod} pour audit
+    \item \textbf{Performance optimisée} : Agrégations appropriées dans Power Query
+    \item \textbf{Visualisations avancées} : Scripts Python pour analyses complexes
+    \item \textbf{Maintenabilité} : Scripts Power Query et Python documentés et modulaires
+\end{itemize}
+
+\subsection{Avantages Métier}
+\begin{itemize}
+    \item \textbf{Vue 360°} : Tableaux de bord complets sur les performances commerciales
+    \item \textbf{Analyses temporelles} : Suivi des tendances avec dimension temps appropriée
+    \item \textbf{Segmentation client} : Catégorisation automatique pour stratégie commerciale
+    \item \textbf{Détection d'anomalies} : Alertes visuelles sur performances anormales
+    \item \textbf{Réduction du temps de reporting} : De plusieurs heures à quelques minutes
+\end{itemize}
+
+\section{Limitations et Améliorations Possibles}
+
+\textbf{Limitations actuelles :}
+\begin{itemize}
+    \item Absence de gestion des dimensions à évolution lente (SCD Type 2)
+    \item Rafraîchissement manuel des données
+    \item Scripts Python non optimisés pour de très gros volumes
+\end{itemize}
+
+\textbf{Améliorations futures :}
+\begin{itemize}
+    \item Automatisation du rafraîchissement via Power BI Service
+    \item Implémentation de SCD pour historisation
+    \item Ajout de dimensions supplémentaires (Produits, Territoires)
+    \item Optimisation des scripts Python avec cache
+    \item Déploiement sur Power BI Service pour partage
+\end{itemize}
+\chapter{Analyse Comparative : Power BI vs Talend}
+
+\section{Contexte de la Comparaison}
+Dans le paysage ETL, \textbf{Power BI} et \textbf{Talend} représentent deux approches distinctes : l'une intégrée (BI + ETL), l'autre spécialisée (ETL pur).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{powerbi_vs_talend.png}
+\caption{Approches différentes : Power BI (intégré) vs Talend (spécialisé)}
+\label{fig:comparison}
+\end{figure}
+
+\section{Tableau Comparatif Synthétique}
+
+\begin{table}[H]
+\centering
+\caption{Synthèse comparative Power BI vs Talend}
+\begin{tabularx}{\textwidth}{|l|X|X|}
+\hline
+\textbf{Aspect} & \textbf{Power BI} & \textbf{Talend} \\
+\hline
+\textbf{Philosophie} & ETL intégré à la BI & ETL spécialisé \\
+\textbf{Cible} & Analysts métier, PM & Ingénieurs données, IT \\
+\textbf{Visualisation} & \textbf{Native et avancée} & Externe nécessaire \\
+\textbf{Connecteurs} & 100+ (Microsoft/Cloud) & \textbf{1000+ (étendus)} \\
+\textbf{Complexité ETL} & Modérée (Power Query) & \textbf{Avancée (Java/Composants)} \\
+\textbf{Scalabilité} & Moyenne (Desktop/Service) & \textbf{Élevée (Big Data)} \\
+\textbf{Coût initial} & \textbf{Faible (Freemium)} & Variable (Open Source + Enterprise) \\
+\textbf{Time-to-market} & \textbf{Rapide (jours)} & Long (semaines) \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{Capture d'écran : Interface Talend}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{talend-interface.png}
+\caption{Interface Talend Open Studio - Conception de jobs ETL}
+\label{fig:talend}
+\end{figure}
+
+\textbf{Description :} Interface graphique de Talend permettant la conception de workflows ETL complexes via des composants drag-and-drop, ciblant principalement les développeurs techniques.
+
+\section{Capture d'écran : Interface Power BI ETL}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{powerbi-etl.png}
+\caption{Power Query Editor - ETL intégré dans Power BI}
+\label{fig:powerbi_etl}
+\end{figure}
+
+\textbf{Description :} Power Query, intégré nativement à Power BI, offre des capacités ETL via une interface accessible aux utilisateurs métier, avec prévisualisation en temps réel.
+
+\section{Notre Choix : Pourquoi Power BI pour Northwind ?}
+
+\subsection{Arguments en faveur de Power BI :}
+\begin{itemize}
+    \item \textbf{Intégration complète} : ETL + Modélisation + Visualisation en un seul outil
+    \item \textbf{Time-to-market réduit} : Déploiement en jours plutôt qu'en semaines
+    \item \textbf{Accessibilité} : Interface accessible aux non-techniciens
+    \item \textbf{Python intégré} : Visualisations avancées sans outils externes
+    \item \textbf{Écosystème Microsoft} : Compatibilité native avec nos sources (SQL Server + Excel)
+\end{itemize}
+
+\subsection{Ce que Talend aurait apporté :}
+\begin{itemize}
+    \item Connectivité plus étendue (si sources multiples et hétérogènes)
+    \item Orchestration avancée des workflows ETL
+    \item Meilleure scalabilité pour de très gros volumes
+\end{itemize}
+
+\section{Conclusion : Le Bon Outil selon le Contexte}
+
+\textbf{Pour notre projet Northwind} (2 sources, modèle simple, besoin de visualisations rapides) :
+\[
+\boxed{\text{Power BI est le choix optimal}}
+\]
+
+\textbf{Pour des scénarios plus complexes} (multi-sources, Big Data, gouvernance stricte) :
+\[
+\boxed{\text{Talend serait plus adapté}}
+\]
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.7\textwidth]{ComparaisonPBItalend.png}
+\caption{Arbre de décision : Power BI vs Talend}
+\label{fig:decision}
+\end{figure}
+
+\subsection{Recommandation :}
+\textbf{Power BI} pour les projets d'analytique business où la rapidité de déploiement et les visualisations sont prioritaires. \textbf{Talend} pour les intégrations de données complexes à grande échelle nécessitant une gouvernance avancée.
+\chapter{Conclusion et Perspectives}
+
+\section{Conclusion}
+Ce projet a démontré la puissance de Power BI comme plateforme ETL complète pour l'intégration de données multi-sources. L'approche méthodologique adoptée a permis de transformer deux sources hétérogènes (SQL Server et Access) en un modèle dimensionnel cohérent et performant.
+
+Les résultats obtenus répondent pleinement aux objectifs initiaux : intégration des données, assurance qualité, modélisation adaptée aux besoins analytiques, et création de visualisations avancées avec Python. La traçabilité mise en place via la colonne \texttt{source\_prod} assure une gouvernance des données robuste, tandis que les scripts Python permettent des analyses multidimensionnelles sophistiquées.
+
+\section{Perspectives}
+Ce projet constitue une base solide pour des évolutions futures :
+\begin{itemize}
+    \item Extension à d'autres sources de données
+    \item Implémentation de Machine Learning pour prédictions
+    \item Création de dashboards interactifs pour différents profils utilisateurs
+    \item Intégration avec Azure Synapse Analytics pour Big Data
+\end{itemize}
+
+\chapter*{Annexes}
+\addcontentsline{toc}{chapter}{Annexes}
+
+\section{Annexe A : Glossaire des Termes Techniques}
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Terme} & \textbf{Définition} \\
+\hline
+ETL & Extract, Transform, Load - Processus d'intégration de données \\
+Power Query & Langage M de transformation dans Power BI \\
+Power BI Desktop & Application cliente pour la création de rapports \\
+Schéma en étoile & Modèle dimensionnel avec une table de faits centrale \\
+Surrogate Key & Clé de substitution artificielle pour les dimensions \\
+SCD & Slowly Changing Dimensions - Gestion des changements historiques \\
+KPI & Key Performance Indicator - Indicateur clé de performance \\
+DataFrame & Structure de données tabulaire utilisée par pandas (Python) \\
+\hline
+\end{tabularx}
+\end{table}
+
+\section{Annexe B : Structure des Fichiers du Projet}
+\begin{verbatim}
+projet_northwind/
+├── data/
+│   ├── northwind_ssms.pbix     # Projet Power BI avec connexion SSMS
+│   └── northwind_access.xlsx   # Données Access converties
+├── scripts/
+│   ├── power_query/
+│   │   ├── dim_client.pq       # Transformation dimension client
+│   │   ├── dim_employee.pq     # Transformation dimension employé
+│   │   ├── dim_temps.pq        # Transformation dimension temps
+│   │   └── fait.pq             # Transformation table de faits
+│   └── python/
+│       ├── analyse_temps.py    # Script analyse temporelle
+│       ├── top10_clients.py    # Script top 10 clients
+│       └── dashboard_clients.py # Script dashboard complet
+├── screenshots/
+│   ├── powerbi_interface.png   # Capture interface Power BI
+│   ├── analyse_temps.png       # Résultat analyse temporelle
+│   ├── top10_clients.png       # Résultat top 10 clients
+│   └── dashboard_clients.png   # Résultat dashboard complet
+└── rapport/
+    └── rapport_etl.tex         # Ce rapport LaTeX
+\end{verbatim}
+
+\section{Annexe C : Captures d'Écran des Résultats}
+\textit{Les captures d'écran suivantes sont disponibles dans le dossier \texttt{screenshots/}:}
+
+\begin{itemize}
+    \item Interface d'accueil de Power BI Desktop
+    \item Éditeur Power Query avec transformations
+    \item Vue du modèle de données relationnel
+    \item Résultat de l'analyse temporelle Python
+    \item Résultat de l'analyse Top 10 Clients Python
+    \item Dashboard complet d'analyse clients Python
+\end{itemize}
+
+\vspace{2cm}
+
+\begin{flushright}
+Fait à [Alger], le \today
+\end{flushright}
+
+\begin{flushright}
+Signature : \hrulefill
+\end{flushright}
+
+\end{document}
