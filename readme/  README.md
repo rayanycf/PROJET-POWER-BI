@@ -1,12 +1,12 @@
-# 📊 Projet Analyse & Visualisation des Commandes – Power BI & Python
+#  Projet Analyse & Visualisation des Commandes – Power BI & Python
 
-## 🎯 Objectif du projet
+##  Objectif du projet
 Ce projet a pour objectif d’analyser les **commandes livrées et non livrées** de la base **Northwind** à l’aide de scripts Python intégrés dans **Power BI**.  
 Il permet de produire des **analyses temporelles**, des **classements clients**, des **catégorisations adaptatives** et un **dashboard KPI** afin d’aider à la prise de décision.
 
 ---
 
-## 🧱 Architecture générale
+##  Architecture générale
 Le projet repose sur :
 - **Power BI** pour la modélisation des données et l’intégration visuelle
 - **Scripts Python** pour les calculs avancés et les visualisations personnalisées
@@ -16,20 +16,20 @@ Les scripts sont indépendants et peuvent être exécutés séparément selon l�
 
 ---
 
-## 🛠️ Choix techniques et justification
+##  Choix techniques et justification
 
-### 📌 Langage
+###  Langage
 - **Python** : langage adapté à l’analyse de données, très bien intégré à Power BI
 
-### 📚 Bibliothèques utilisées
+###  Bibliothèques utilisées
 - `pandas` : manipulation et agrégation des données
 - `numpy` : calculs numériques et indicateurs
 - `matplotlib` : création de graphiques personnalisés
 - `seaborn` (ponctuellement) : amélioration esthétique des visualisations
 
-👉 Ces bibliothèques sont standards, stables et compatibles avec Power BI.
+ Ces bibliothèques sont standards, stables et compatibles avec Power BI.
 
-### 🧠 Approche analytique
+###  Approche analytique
 - Agrégation par dimensions métier (temps, client, employé)
 - Sélection dynamique du **Top 10 clients**
 - **Catégorisation adaptative** basée sur les percentiles (robuste et générique)
@@ -37,7 +37,7 @@ Les scripts sont indépendants et peuvent être exécutés séparément selon l�
 
 ---
 
-## 📂 Scripts disponibles
+##  Scripts disponibles
 
 ### 1️⃣ Analyse temporelle
 - Analyse des commandes par période (`id_temps`)
@@ -108,9 +108,9 @@ pip install pandas numpy matplotlib seaborn
 
 ---
 
-## 👨‍🎓 Auteur
+##  Auteur
 **Mohamed Rayane Yacef**  
 Master Big Data  
-Projet académique – Analyse & Visualisation des données
+Projet académique – Analyse & Visualisation des données NORTWHIND sur POWER BI 
 
 ---
